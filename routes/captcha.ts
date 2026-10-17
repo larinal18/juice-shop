@@ -3,44 +3,80 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { type Request, type Response, type NextFunction } from 'express'
-import { CaptchaModel } from '../models/captcha'
+import { type Request, type Response, type NextFunction } from "express";
+import { CaptchaModel } from "../models/captcha";
 
-export function captchas () {
+export function captchas() {
   return async (req: Request, res: Response) => {
-    const captchaId = req.app.locals.captchaId++
-    const operators = ['*', '+', '-']
+    const captchaId = req.app.locals.captchaId++;
+    const operators = ["*", "+", "-"];
 
-    const firstTerm = Math.floor((Math.random() * 10) + 1)
-    const secondTerm = Math.floor((Math.random() * 10) + 1)
-    const thirdTerm = Math.floor((Math.random() * 10) + 1)
+    const firstTerm = Math.floor(Math.random() * 10 + 1);
+    const secondTerm = Math.floor(Math.random() * 10 + 1);
+    const thirdTerm = Math.floor(Math.random() * 10 + 1);
 
-    const firstOperator = operators[Math.floor((Math.random() * 3))]
-    const secondOperator = operators[Math.floor((Math.random() * 3))]
+    const firstOperator = operators[Math.floor(Math.random() * 3)];
+    const secondOperator = operators[Math.floor(Math.random() * 3)];
 
-    const expression = firstTerm.toString() + firstOperator + secondTerm.toString() + secondOperator + thirdTerm.toString()
-    const answer = eval(expression).toString() // eslint-disable-line no-eval
+    const expression =
+      firstTerm.toString() +
+      firstOperator +
+      secondTerm.toString() +
+      secondOperator +
+      thirdTerm.toString();
+    const calculate = (a: number, op: string, b: number): number => {
+      switch (op) {
+        case "*":
+          return a * b;
+        case "+":
+          return a + b;
+        case "-":
+          return a - b;
+        default:
+          throw new Error("Unsupported CAPTCHA operator");
+      }
+    };
+
+    let result: number;
+
+    if (firstOperator === "*") {
+      const intermediate = calculate(firstTerm, firstOperator, secondTerm);
+      result = calculate(intermediate, secondOperator, thirdTerm);
+    } else if (secondOperator === "*") {
+      const intermediate = calculate(secondTerm, secondOperator, thirdTerm);
+      result = calculate(firstTerm, firstOperator, intermediate);
+    } else {
+      const intermediate = calculate(firstTerm, firstOperator, secondTerm);
+      result = calculate(intermediate, secondOperator, thirdTerm);
+    }
+
+    const answer = result.toString();
 
     const captcha = {
       captchaId,
       captcha: expression,
-      answer
-    }
-    const captchaInstance = CaptchaModel.build(captcha)
-    await captchaInstance.save()
-    res.json(captcha)
-  }
+      answer,
+    };
+    const captchaInstance = CaptchaModel.build(captcha);
+    await captchaInstance.save();
+    res.json(captcha);
+  };
 }
 
-export const verifyCaptcha = () => async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const captcha = await CaptchaModel.findOne({ where: { captchaId: req.body.captchaId } })
-    if ((captcha != null) && req.body.captcha === captcha.answer) {
-      next()
-    } else {
-      res.status(401).send(res.__('Wrong answer to CAPTCHA. Please try again.'))
+export const verifyCaptcha =
+  () => async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const captcha = await CaptchaModel.findOne({
+        where: { captchaId: req.body.captchaId },
+      });
+      if (captcha != null && req.body.captcha === captcha.answer) {
+        next();
+      } else {
+        res
+          .status(401)
+          .send(res.__("Wrong answer to CAPTCHA. Please try again."));
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error)
-  }
-}
+  };
