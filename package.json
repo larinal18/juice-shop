@@ -158,7 +158,8 @@
     "zod": "^4.4.3"
   },
   "overrides": {
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "crypto-js": "^4.2.0"
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "^2.0.0||^3.0.0||^4.00",
