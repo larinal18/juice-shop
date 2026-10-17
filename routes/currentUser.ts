@@ -27,8 +27,8 @@ export function retrieveLoggedInUser () {
 
         if (requestedFields.length > 0) {
           // When fields are specified, return only those fields
-          for (const field of requestedFields) {
-            if (allowedFields.includes(field) && user?.data[field as keyof typeof user.data] !== undefined) {
+          for (const field of allowedFields) {
+            if (requestedFields.includes(field) && user?.data[field as keyof typeof user.data] !== undefined) {
               baseUser[field] = user?.data[field as keyof typeof user.data]
             }
           }
